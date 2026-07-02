@@ -9,11 +9,12 @@ scripts, and the systemd user units that glue them together.
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Manlibear/dotfiles/main/install.sh)"
 ```
 
-Clones this repo to `~/Projects/dotfiles`, installs packages (`packages.txt`
-via pacman, `aur-packages.txt` via paru — bootstrapping paru itself if
-missing), symlinks everything under `stow/` into `$HOME` with GNU Stow,
-installs oh-my-posh, installs + enables the systemd user units, and offers to
-set fish as your login shell. Safe to re-run.
+Clones this repo to `~/Projects/dotfiles`, bootstraps `paru` if it's missing,
+installs every package in `packages.txt` through it (paru checks the
+official repos before falling back to AUR, so one list covers both),
+symlinks everything under `stow/` into `$HOME` with GNU Stow, installs
+oh-my-posh, installs + enables the systemd user units, and offers to set
+fish as your login shell. Safe to re-run.
 
 ## Layout
 
@@ -24,8 +25,7 @@ stow/
   noctalia/.config/noctalia/…  # settings.json, plugins.json, plugins/
   scripts/.local/bin/…      # desktop-entry-maker, hide-apps, sync-*
 systemd/                    # copied to ~/.config/systemd/user/, not stowed
-packages.txt                # pacman -S --needed
-aur-packages.txt            # paru -S --needed
+packages.txt                # paru -S --needed (official repo + AUR, one list)
 install.sh
 ```
 

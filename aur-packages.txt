@@ -1,3 +1,0 @@
-noctalia-shell
-noctalia-qs
-asusctl

@@ -31,11 +31,10 @@ fi
 
 cd "$DEST"
 
-# --- 2. Official repo packages ----------------------------------------------
-log "Installing pacman packages"
-sudo pacman -S --needed $(<packages.txt)
-
-# --- 3. AUR helper (paru) ---------------------------------------------------
+# --- 2. AUR helper (paru) ---------------------------------------------------
+# Bootstrapped via plain pacman since paru doesn't exist yet; everything
+# after this goes through paru, which checks the official repos before
+# falling back to AUR, so one package list covers both.
 if ! command -v paru >/dev/null 2>&1; then
     log "Installing paru (AUR helper)"
     sudo pacman -S --needed --noconfirm base-devel git
@@ -45,11 +44,11 @@ if ! command -v paru >/dev/null 2>&1; then
     rm -rf "$tmp"
 fi
 
-# --- 4. AUR packages ---------------------------------------------------------
-log "Installing AUR packages"
-paru -S --needed $(<aur-packages.txt)
+# --- 3. Packages (official repo + AUR) ---------------------------------------
+log "Installing packages"
+paru -S --needed $(<packages.txt)
 
-# --- 5. Symlink config files with stow --------------------------------------
+# --- 4. Symlink config files with stow --------------------------------------
 #
 # Some packages (niri notably) seed a default config file on first launch if
 # none exists yet. If that happened before this script ran — e.g. the
@@ -75,13 +74,13 @@ log "Stowing dotfiles"
 mkdir -p "$HOME/.local/bin"
 stow -d stow -t "$HOME" --restow $STOW_PACKAGES
 
-# --- 6. oh-my-posh (fish prompt) --------------------------------------------
+# --- 5. oh-my-posh (fish prompt) --------------------------------------------
 if ! command -v oh-my-posh >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/oh-my-posh" ]; then
     log "Installing oh-my-posh"
     curl -s https://ohmyposh.dev/install.sh | bash -s -- -d "$HOME/.local/bin"
 fi
 
-# --- 7. systemd --user units -------------------------------------------------
+# --- 6. systemd --user units -------------------------------------------------
 log "Installing systemd user units"
 mkdir -p "$HOME/.config/systemd/user"
 for unit in systemd/*.service; do
@@ -106,7 +105,7 @@ for unit in systemd/*.service; do
     systemctl --user enable --now "$(basename "$unit")"
 done
 
-# --- 8. Default shell --------------------------------------------------------
+# --- 7. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"

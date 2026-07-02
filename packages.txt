@@ -5,3 +5,7 @@ inotify-tools
 jq
 stow
 git
+noctalia-shell
+noctalia-qs
+asusctl
+rog-control-center
