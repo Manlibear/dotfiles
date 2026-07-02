@@ -13,8 +13,9 @@ Clones this repo to `~/Projects/dotfiles`, bootstraps `paru` if it's missing,
 installs every package in `packages.txt` through it (paru checks the
 official repos before falling back to AUR, so one list covers both),
 symlinks everything under `stow/` into `$HOME` with GNU Stow, installs
-oh-my-posh, installs + enables the systemd user units, and offers to set
-fish as your login shell. Safe to re-run.
+oh-my-posh, installs + enables the systemd user units, wires up visage
+face-unlock (udev rule + systemd override + PAM), and offers to set fish as
+your login shell. Safe to re-run.
 
 ## Layout
 
@@ -25,6 +26,9 @@ stow/
   noctalia/.config/noctalia/…  # settings.json, plugins.json, plugins/
   scripts/.local/bin/…      # desktop-entry-maker, hide-apps, sync-*
 systemd/                    # copied to ~/.config/systemd/user/, not stowed
+system/                      # root-owned /etc files, installed via sudo, not stowed
+  udev/99-visage-ir.rules
+  systemd/visaged.service.d/override.conf
 packages.txt                # paru -S --needed (official repo + AUR, one list)
 install.sh
 ```
@@ -47,6 +51,15 @@ the path under it (e.g. `stow/fish/.config/fish/config.fish` →
 `systemd/swayidle.service` is normally written by a package/setup script
 (hence root-owned on this machine) rather than hand-authored, but it's
 included so a fresh install doesn't need to rediscover it.
+
+- `/var/lib/visage/faces.db` and `.key` — your enrolled face data. Biometric
+  data, not config; never tracked. Run `visage enroll` after a fresh install.
+- `system/udev/99-visage-ir.rules` is pinned to *this laptop's* exact USB
+  path for the IR camera (`ID_PATH=="pci-0000:00:14.0-usb-0:8:1.2"`). On
+  different hardware this rule just won't match anything — `/dev/video-ir`
+  won't exist, and `visaged` will stay up but fail to authenticate (PAM
+  falls through to your password, so nothing breaks, face-unlock just won't
+  work until the rule's path is updated for that machine).
 
 ## Adding something new
 
