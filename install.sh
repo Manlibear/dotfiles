@@ -33,7 +33,7 @@ cd "$DEST"
 
 # --- 2. Official repo packages ----------------------------------------------
 log "Installing pacman packages"
-sudo pacman -S --needed - <packages.txt
+sudo pacman -S --needed $(<packages.txt)
 
 # --- 3. AUR helper (paru) ---------------------------------------------------
 if ! command -v paru >/dev/null 2>&1; then
@@ -47,7 +47,7 @@ fi
 
 # --- 4. AUR packages ---------------------------------------------------------
 log "Installing AUR packages"
-paru -S --needed - <aur-packages.txt
+paru -S --needed $(<aur-packages.txt)
 
 # --- 5. Symlink config files with stow --------------------------------------
 #
