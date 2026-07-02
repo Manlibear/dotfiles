@@ -7,8 +7,6 @@ stow
 git
 noctalia-shell
 noctalia-qs
-asusctl
-rog-control-center
 dotnet-sdk-10.0
 dotnet-sdk-8.0
 fastfetch
@@ -25,7 +23,6 @@ matugen
 mesa-utils
 moonlight-qt
 networkmanager
-nvidia-prime
 nvtop
 pake-cli
 papirus-icon-theme
@@ -39,3 +36,7 @@ visage-bin
 visual-studio-code-bin
 sddm
 sddm-astronaut-theme
+
+nvidia-prime
+asusctl
+rog-control-center

@@ -10,4 +10,5 @@ alias la "eza -la --icons"
 alias ll "eza -l --icons"
 alias lt "eza --tree --icons"
 alias backlog "~/Projects/GamesBacklog/.venv/bin/python3 ~/Projects/GamesBacklog/app.py"
+alias edit-niri "nano ~/Projects/dotfiles/stow/niri/.config/niri/config.kdl"
 # GamesBacklog IGDB credentials now live in ~/Projects/GamesBacklog/config.json instead
