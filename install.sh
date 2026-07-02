@@ -50,9 +50,31 @@ log "Installing AUR packages"
 paru -S --needed - <aur-packages.txt
 
 # --- 5. Symlink config files with stow --------------------------------------
+#
+# Some packages (niri notably) seed a default config file on first launch if
+# none exists yet. If that happened before this script ran — e.g. the
+# install media auto-started a session — stow refuses to overwrite a real
+# file with a symlink. Move any such real file aside first so our tracked
+# version wins; back it up rather than deleting in case there's something
+# worth diffing later.
+BACKUP_DIR="$HOME/.dotfiles-preexisting-$(date +%Y%m%d-%H%M%S)"
+STOW_PACKAGES="fish niri noctalia scripts"
+for pkg in $STOW_PACKAGES; do
+    while IFS= read -r -d '' src; do
+        rel="${src#stow/$pkg/}"
+        target="$HOME/$rel"
+        if [ -e "$target" ] && [ ! -L "$target" ]; then
+            log "Backing up pre-existing $target"
+            mkdir -p "$(dirname "$BACKUP_DIR/$rel")"
+            mv "$target" "$BACKUP_DIR/$rel"
+        fi
+    done < <(find "stow/$pkg" -type f -print0)
+done
+[ -d "$BACKUP_DIR" ] && log "Pre-existing files backed up to $BACKUP_DIR"
+
 log "Stowing dotfiles"
 mkdir -p "$HOME/.local/bin"
-stow -d stow -t "$HOME" --restow fish niri noctalia scripts
+stow -d stow -t "$HOME" --restow $STOW_PACKAGES
 
 # --- 6. oh-my-posh (fish prompt) --------------------------------------------
 if ! command -v oh-my-posh >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/oh-my-posh" ]; then
