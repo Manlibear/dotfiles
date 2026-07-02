@@ -1,0 +1,11 @@
+[Unit]
+Description=Sync niri border colour from Noctalia palette
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'inotifywait -m -e close_write $HOME/.config/noctalia/colors.json | while read; do $HOME/.local/bin/sync-niri-border; $HOME/.local/bin/sync-folder-color; done'
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

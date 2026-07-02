@@ -1,0 +1,23 @@
+{
+  "id": "moonlight-widget",
+  "name": "Moonlight",
+  "version": "2.0.0",
+  "minNoctaliaVersion": "4.7.0",
+  "author": "you",
+  "license": "MIT",
+  "description": "Bar widget to wake or connect to Bear-PC via Moonlight.",
+  "tags": ["Bar", "Panel"],
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "panel": "Panel.qml",
+    "settings": "Settings.qml"
+  },
+  "metadata": {
+    "defaultSettings": {
+      "bearMac": "10:7C:61:5D:FC:EC",
+      "bearIp": "192.168.1.196",
+      "pollInterval": 30
+    }
+  }
+}

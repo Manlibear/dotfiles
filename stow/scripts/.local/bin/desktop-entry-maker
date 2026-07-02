@@ -1,0 +1,146 @@
+#!/bin/bash
+set -uo pipefail
+
+ICON_DIRS=(/usr/share/icons /usr/share/pixmaps ~/.local/share/icons ~/.icons)
+THUMB_CACHE="$HOME/.cache/desktop-entry-maker/thumbs"
+mkdir -p "$THUMB_CACHE"
+
+cell_w=14
+cell_h=8
+page_size=1
+grid_cols=1
+grid_rows=1
+
+search_icons() {
+    local q="$1"
+    if [ -z "$q" ]; then
+        find "${ICON_DIRS[@]}" -type f \( -iname "*.png" -o -iname "*.svg" -o -iname "*.xpm" \) 2>/dev/null
+    else
+        find "${ICON_DIRS[@]}" -type f \( -iname "*.png" -o -iname "*.svg" -o -iname "*.xpm" \) 2>/dev/null | grep -i -- "$q"
+    fi | awk -F/ '{name=$NF; sub(/\.[^.]+$/,"",name); if (!(name in seen)) {seen[name]=$0; print $0}}'
+}
+
+thumbnail_for() {
+    local src="$1"
+    local key
+    key=$(echo -n "$src" | md5sum | cut -d' ' -f1)
+    local out="$THUMB_CACHE/$key.png"
+    if [ ! -f "$out" ]; then
+        case "$src" in
+            *.svg) rsvg-convert -w 256 -h 256 "$src" -o "$out" 2>/dev/null ;;
+            *) convert "$src" -resize 256x256 "$out" 2>/dev/null ;;
+        esac
+    fi
+    [ -f "$out" ] && echo "$out"
+}
+
+draw_page() {
+    clear
+    local cols lines
+    cols=$(tput cols)
+    lines=$(tput lines)
+    grid_cols=$(( cols / cell_w ))
+    grid_rows=$(( (lines - 4) / cell_h ))
+    (( grid_cols < 1 )) && grid_cols=1
+    (( grid_rows < 1 )) && grid_rows=1
+    page_size=$(( grid_cols * grid_rows ))
+
+    echo "Search: '$query'   showing $((start + 1))-$((start + count_on_page)) of $total   [number=pick, n=next, p=prev, s=search, q=quit]"
+
+    local i path thumb col row x y label_row
+    for ((i = 0; i < count_on_page; i++)); do
+        idx=$(( start + i ))
+        path="${all_icons[$idx]}"
+        thumb=$(thumbnail_for "$path")
+        col=$(( i % grid_cols ))
+        row=$(( i / grid_cols ))
+        x=$(( col * cell_w ))
+        y=$(( 2 + row * cell_h ))
+        if [ -n "$thumb" ]; then
+            kitty +kitten icat --transfer-mode=memory --stdin=no --place="${cell_w}x$((cell_h - 1))@${x}x${y}" "$thumb" 2>/dev/null
+        fi
+        label_row=$(( y + cell_h - 1 ))
+        tput cup "$label_row" "$x" 2>/dev/null
+        printf "%2d %s" "$idx" "$(basename "${path%.*}" | cut -c1-11)"
+    done
+    tput cup $(( 2 + grid_rows * cell_h + 1 )) 0 2>/dev/null
+}
+
+read -rp "Icon search (substring, blank = browse all): " query
+mapfile -t all_icons < <(search_icons "$query")
+total=${#all_icons[@]}
+start=0
+icon=""
+
+if [ "$total" -eq 0 ]; then
+    echo "No icons matched '$query'." >&2
+    exit 1
+fi
+
+while true; do
+    count_on_page=$(( total - start ))
+    (( count_on_page > page_size )) && count_on_page=$page_size
+    (( count_on_page < 0 )) && count_on_page=0
+
+    draw_page
+
+    read -rp "> " sel
+    case "$sel" in
+        n)
+            (( start + page_size < total )) && start=$(( start + page_size ))
+            ;;
+        p)
+            (( start - page_size >= 0 )) && start=$(( start - page_size )) || start=0
+            ;;
+        s)
+            read -rp "New search: " query
+            mapfile -t all_icons < <(search_icons "$query")
+            total=${#all_icons[@]}
+            start=0
+            if [ "$total" -eq 0 ]; then
+                echo "No icons matched '$query'." >&2
+                exit 1
+            fi
+            ;;
+        q)
+            echo "Aborted." >&2
+            exit 1
+            ;;
+        ''|*[!0-9]*)
+            : # ignore invalid input, redraw
+            ;;
+        *)
+            if (( sel >= 0 && sel < total )); then
+                icon="${all_icons[$sel]}"
+                break
+            fi
+            ;;
+    esac
+done
+
+clear
+echo "Selected icon: $icon"
+read -rp "Name: " name
+read -rp "Exec (full command/path): " exec_cmd
+read -rp "Comment: " comment
+read -rp "Categories (e.g. Development;Graphics;) [default: Utility;]: " categories
+categories=${categories:-Utility;}
+read -rp "Run in terminal? [y/N]: " terminal_answer
+[[ "$terminal_answer" =~ ^[Yy]$ ]] && terminal=true || terminal=false
+
+slug=$(echo "$name" | tr '[:upper:] ' '[:lower:]-')
+dest="$HOME/.local/share/applications/$slug.desktop"
+
+cat > "$dest" <<EOF
+[Desktop Entry]
+Type=Application
+Name=$name
+Comment=$comment
+Exec=$exec_cmd
+Icon=$icon
+Terminal=$terminal
+Categories=$categories
+EOF
+
+echo "Wrote $dest"
+update-desktop-database "$HOME/.local/share/applications" 2>/dev/null || true

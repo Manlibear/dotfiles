@@ -1,0 +1,8 @@
+niri
+fish
+eza
+inotify-tools
+jq
+asusctl
+stow
+git

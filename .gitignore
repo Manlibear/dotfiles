@@ -1,0 +1,3 @@
+.DS_Store
+stow/noctalia/.config/noctalia/plugins/daily-wallpaper/downloads/*
+!stow/noctalia/.config/noctalia/plugins/daily-wallpaper/downloads/.gitkeep

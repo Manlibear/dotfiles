@@ -1,0 +1,28 @@
+#!/bin/bash
+APPS=(
+    "avahi-discover"
+    "bssh"
+    "bvnc"
+    "cmake-gui"
+    "htop"
+    "qv4l2"
+    "qvidcap"
+    "vim"
+    "xgps"
+    "xgpsspeed"
+    "alacritty"
+)
+
+mkdir -p ~/.local/share/applications
+
+for app in "${APPS[@]}"; do
+    src="/usr/share/applications/$app.desktop"
+    dst="$HOME/.local/share/applications/$app.desktop"
+    if [ -f "$src" ]; then
+        cp "$src" "$dst"
+        echo "NoDisplay=true" >> "$dst"
+        echo "Hid $app"
+    else
+        echo "Not found: $app"
+    fi
+done

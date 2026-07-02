@@ -1,0 +1,10 @@
+[Unit]
+Description=ROG Control Center
+After=graphical-session.target
+
+[Service]
+ExecStart=rog-control-center
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target
