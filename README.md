@@ -21,7 +21,7 @@ fish as your login shell. Safe to re-run.
 ```
 stow/
   fish/.config/fish/…       # config.fish, functions/
-  niri/.config/niri/…       # config.kdl, dms/*.kdl
+  niri/.config/niri/…       # config.kdl
   noctalia/.config/noctalia/…  # settings.json, plugins.json, plugins/
   scripts/.local/bin/…      # desktop-entry-maker, hide-apps, sync-*
 systemd/                    # copied to ~/.config/systemd/user/, not stowed

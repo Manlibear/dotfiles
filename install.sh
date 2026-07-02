@@ -105,11 +105,68 @@ for unit in systemd/*.service; do
     systemctl --user enable --now "$(basename "$unit")"
 done
 
-# --- 7. Default shell --------------------------------------------------------
+# --- 7. Visage (face-unlock) system config -----------------------------------
+#
+# visage-bin (in packages.txt) only installs the binary + its own systemd
+# units. Everything below is what actually makes it authenticate:
+#   - a udev rule mapping this laptop's IR camera to a stable /dev/video-ir
+#     symlink — HARDWARE-SPECIFIC (matches this exact USB path), won't do
+#     anything useful on different hardware
+#   - a systemd drop-in pointing visaged at that device + liveness tuning
+#   - a pam_visage.so line in sudo/system-auth, positioned so it's tried
+#     first and falls through to your password on failure (PAM `sufficient`)
+# Your enrolled face data (/var/lib/visage/faces.db, .key) is NOT tracked
+# here — it's biometric data, not config. Run `visage enroll` after this.
+log "Installing visage system config"
+
+udev_target="/etc/udev/rules.d/99-visage-ir.rules"
+if [ -e "$udev_target" ] && ! cmp -s system/udev/99-visage-ir.rules "$udev_target"; then
+    log "Backing up pre-existing $udev_target"
+    mkdir -p "$BACKUP_DIR/etc/udev/rules.d"
+    sudo cp "$udev_target" "$BACKUP_DIR/etc/udev/rules.d/"
+fi
+sudo cp system/udev/99-visage-ir.rules "$udev_target"
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+override_target="/etc/systemd/system/visaged.service.d/override.conf"
+if [ -e "$override_target" ] && ! cmp -s system/systemd/visaged.service.d/override.conf "$override_target"; then
+    log "Backing up pre-existing $override_target"
+    mkdir -p "$BACKUP_DIR/etc/systemd/system/visaged.service.d"
+    sudo cp "$override_target" "$BACKUP_DIR/etc/systemd/system/visaged.service.d/"
+fi
+sudo mkdir -p "$(dirname "$override_target")"
+sudo cp system/systemd/visaged.service.d/override.conf "$override_target"
+sudo systemctl daemon-reload
+sudo systemctl enable --now visaged.service
+sudo systemctl restart visaged.service   # pick up the drop-in if it changed
+sudo systemctl enable visage-resume.service
+
+for pam_file in sudo system-auth; do
+    target="/etc/pam.d/$pam_file"
+    if ! grep -q pam_visage.so "$target"; then
+        log "Adding pam_visage.so to $target"
+        case "$pam_file" in
+            sudo)
+                # First line after the header, ahead of the system-auth include,
+                # so face auth is tried before falling through to the password stack.
+                sudo sed -i '/^auth\s\+include\s\+system-auth/i auth            sufficient      pam_visage.so' "$target"
+                ;;
+            system-auth)
+                # Ahead of the pam_unix.so password check, same "try biometric
+                # first, fall through on failure" ordering.
+                sudo sed -i '/\[success=1 default=bad\]/i auth      sufficient    pam_visage.so' "$target"
+                ;;
+        esac
+    fi
+done
+
+# --- 8. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"
 fi
 
 [ -d "$BACKUP_DIR" ] && log "Pre-existing files backed up to $BACKUP_DIR"
-log "Done. Log out/in (or reboot) to pick up the shell change and niri session."
+log "Done. Run 'visage enroll' to set up face-unlock (your face data isn't tracked)."
+log "Log out/in (or reboot) to pick up the shell change and niri session."
