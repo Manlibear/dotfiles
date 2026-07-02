@@ -90,6 +90,14 @@ for unit in systemd/*.service; do
         log "Backing up pre-existing $target"
         mkdir -p "$BACKUP_DIR/.config/systemd/user"
         cp "$target" "$BACKUP_DIR/.config/systemd/user/"
+        # Some units (e.g. swayidle.service on this machine) get written
+        # root-owned by a package/setup script despite living under
+        # ~/.config. We can read/back it up but not overwrite it — clear it
+        # with sudo so the replacement ends up normally user-owned, which
+        # makes future runs self-healing (no sudo needed after the first).
+        if [ ! -w "$target" ]; then
+            sudo rm -f "$target"
+        fi
     fi
     cp "$unit" "$target"
 done
