@@ -70,7 +70,6 @@ for pkg in $STOW_PACKAGES; do
         fi
     done < <(find "stow/$pkg" -type f -print0)
 done
-[ -d "$BACKUP_DIR" ] && log "Pre-existing files backed up to $BACKUP_DIR"
 
 log "Stowing dotfiles"
 mkdir -p "$HOME/.local/bin"
@@ -85,7 +84,15 @@ fi
 # --- 7. systemd --user units -------------------------------------------------
 log "Installing systemd user units"
 mkdir -p "$HOME/.config/systemd/user"
-cp systemd/*.service "$HOME/.config/systemd/user/"
+for unit in systemd/*.service; do
+    target="$HOME/.config/systemd/user/$(basename "$unit")"
+    if [ -e "$target" ]; then
+        log "Backing up pre-existing $target"
+        mkdir -p "$BACKUP_DIR/.config/systemd/user"
+        cp "$target" "$BACKUP_DIR/.config/systemd/user/"
+    fi
+    cp "$unit" "$target"
+done
 systemctl --user daemon-reload
 for unit in systemd/*.service; do
     systemctl --user enable --now "$(basename "$unit")"
@@ -97,4 +104,5 @@ if [ "$SHELL" != "$(command -v fish)" ]; then
     chsh -s "$(command -v fish)"
 fi
 
+[ -d "$BACKUP_DIR" ] && log "Pre-existing files backed up to $BACKUP_DIR"
 log "Done. Log out/in (or reboot) to pick up the shell change and niri session."
