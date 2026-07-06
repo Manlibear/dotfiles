@@ -1,0 +1,33 @@
+#!/bin/bash
+# Toggle the focused column between full width and its previous width, based on
+# the window's actual current geometry rather than a remembered script-side flag
+# (which desyncs from reality whenever width changes via Super+R, mouse drag, etc).
+
+STATE_DIR="$HOME/.cache/hypr-colwidth"
+mkdir -p "$STATE_DIR"
+
+WIN=$(hyprctl activewindow -j)
+ADDR=$(jq -r '.address' <<<"$WIN")
+[ -z "$ADDR" ] || [ "$ADDR" = "null" ] && exit 0
+
+WIN_W=$(jq -r '.size[0]' <<<"$WIN")
+MON_ID=$(jq -r '.monitor' <<<"$WIN")
+MON_W=$(hyprctl monitors -j | jq -r ".[] | select(.id == $MON_ID) | .width / .scale")
+
+STATE_FILE="$STATE_DIR/${ADDR//[:\/]/_}"
+
+IS_MAXIMIZED=$(awk -v w="$WIN_W" -v m="$MON_W" 'BEGIN { print (w > m * 0.9) ? 1 : 0 }')
+
+if [ "$IS_MAXIMIZED" = "1" ]; then
+    if [ -f "$STATE_FILE" ]; then
+        PREV=$(cat "$STATE_FILE")
+        rm -f "$STATE_FILE"
+    else
+        PREV=0.5
+    fi
+    hyprctl dispatch "hl.dsp.layout(\"colresize $PREV\")" >/dev/null
+else
+    FRAC=$(awk -v w="$WIN_W" -v m="$MON_W" 'BEGIN { printf "%.4f", w/m }')
+    echo "$FRAC" > "$STATE_FILE"
+    hyprctl dispatch 'hl.dsp.layout("colresize 1")' >/dev/null
+fi

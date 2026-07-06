@@ -57,7 +57,7 @@ paru -S --needed $(<packages.txt)
 # version wins; back it up rather than deleting in case there's something
 # worth diffing later.
 BACKUP_DIR="$HOME/.dotfiles-preexisting-$(date +%Y%m%d-%H%M%S)"
-STOW_PACKAGES="fish niri noctalia scripts"
+STOW_PACKAGES="fish niri noctalia scripts hypr"
 for pkg in $STOW_PACKAGES; do
     while IFS= read -r -d '' src; do
         rel="${src#stow/$pkg/}"
@@ -161,7 +161,44 @@ for pam_file in sudo system-auth; do
     fi
 done
 
-# --- 8. Default shell --------------------------------------------------------
+# --- 8. Noctalia notification patches ----------------------------------------
+#
+# noctalia-shell's real desktop notifications (Discord etc.) render through
+# its stock Notification.qml card and only reliably auto-dismiss when
+# nothing else owns the org.freedesktop.Notifications dbus name. Two fixes,
+# both patches against noctalia-shell 4.7.7-3's stock files:
+#   - route real notifications through ToastService (same UI as internal
+#     toasts — volume/DND/plugins) instead of the notification card, for a
+#     consistent look and an animation-driven dismiss instead of a polling
+#     timer; also plumb a real app icon/avatar through the toast (falls
+#     back to a generic glyph when the sender doesn't supply one)
+#   - mako (installed by something pulling it in as niri's optional dep,
+#     never listed in packages.txt) was racing noctalia's own
+#     NotificationServer for that dbus name and usually winning, which is
+#     why patching noctalia's QML alone did nothing — masked via systemctl
+#     below so it can never grab the name even if it reappears
+# These are full-file replacements of package-owned files under
+# /etc/xdg/quickshell — a noctalia-shell update can change those files
+# upstream, and re-running this step will blindly overwrite any upstream
+# changes with our stale copy. Worth diffing against the new package
+# version after a noctalia-shell bump rather than trusting this blindly.
+log "Installing noctalia notification patches"
+
+systemctl --user mask mako.service >/dev/null 2>&1 || true
+
+QS_TARGET_ROOT="/etc/xdg/quickshell/noctalia-shell"
+while IFS= read -r -d '' src; do
+    rel="${src#system/quickshell/noctalia-shell/}"
+    target="$QS_TARGET_ROOT/$rel"
+    if [ -e "$target" ] && ! cmp -s "$src" "$target"; then
+        log "Backing up pre-existing $target"
+        mkdir -p "$BACKUP_DIR/$(dirname "${target#/}")"
+        sudo cp "$target" "$BACKUP_DIR/${target#/}"
+    fi
+    sudo cp "$src" "$target"
+done < <(find system/quickshell/noctalia-shell -type f -print0)
+
+# --- 9. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"

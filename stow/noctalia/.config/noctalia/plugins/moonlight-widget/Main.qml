@@ -17,23 +17,26 @@ Item {
     property bool isConnecting: false
 
     function checkStatus() {
-        if (bearIp === "" || isChecking) return;
+        if (bearIp === "" || isChecking)
+            return;
         isChecking = true;
         pingProcess.running = false;
         pingProcess.running = true;
     }
 
     function wakePC() {
-        if (bearMac === "") return;
+        if (bearMac === "")
+            return;
         Quickshell.execDetached(["wol", bearMac]);
         ToastService.showNotice("Moonlight", "Magic packet sent to Bear-PC", "wifi");
     }
 
     function connectMoonlight() {
-        if (bearIp === "") return;
+        if (bearIp === "")
+            return;
         isConnecting = true;
         connectTimer.start();
-        Quickshell.execDetached(["sh", "-c", "moonlight stream \"" + bearIp + "\" Desktop"]);
+        Quickshell.execDetached(["sh", "-c", "prime-run moonlight stream \"" + bearIp + "\" Desktop"]);
     }
 
     Process {

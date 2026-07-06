@@ -1,4 +1,7 @@
 niri
+hyprland
+xdg-desktop-portal-hyprland
+grimblast-git
 fish
 eza
 inotify-tools
@@ -33,7 +36,7 @@ ttf-meslo-nerd
 unzip
 usbutils
 visage-bin
-visual-studio-code-bin
+zed
 sddm
 sddm-astronaut-theme
 

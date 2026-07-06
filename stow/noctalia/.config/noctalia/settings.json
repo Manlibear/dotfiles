@@ -27,8 +27,14 @@
             "blender",
             "Half-Life 2",
             "Heroes of Hammerwatch II",
-            "ldtk",
-            "FFPWA-01KW4WD5P3AQ94EW2GA07K9NPZ"
+            "FFPWA-01KW4WD5P3AQ94EW2GA07K9NPZ",
+            "org.godotengine.Godot-mono",
+            "discord",
+            "rog-control-center",
+            "libreoffice-writer",
+            "libreoffice-calc",
+            "com.moonlight_stream.Moonlight",
+            "dev.zed.Zed"
         ],
         "position": "center",
         "screenshotAnnotationTool": "",
@@ -235,6 +241,10 @@
     },
     "brightness": {
         "backlightDeviceMappings": [
+            {
+                "device": "/sys/class/backlight/nvidia_0",
+                "output": "eDP-1"
+            }
         ],
         "brightnessStep": 5,
         "enableDdcSupport": false,

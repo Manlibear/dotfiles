@@ -1,7 +1,8 @@
 # dotfiles
 
-Personal Arch Linux config: niri, noctalia, fish (+ oh-my-posh), a few custom
-scripts, and the systemd user units that glue them together.
+Personal Arch Linux config: niri, noctalia, fish (+ oh-my-posh), a Hyprland
+trial config, a few custom scripts, and the systemd user units that glue
+them together.
 
 ## Fresh install
 
@@ -14,7 +15,8 @@ installs every package in `packages.txt` through it (paru checks the
 official repos before falling back to AUR, so one list covers both),
 symlinks everything under `stow/` into `$HOME` with GNU Stow, installs
 oh-my-posh, installs + enables the systemd user units, wires up visage
-face-unlock (udev rule + systemd override + PAM), and offers to set fish as
+face-unlock (udev rule + systemd override + PAM), patches noctalia-shell's
+notification handling (see below) and masks mako, and offers to set fish as
 your login shell. Safe to re-run.
 
 ## Layout
@@ -23,18 +25,22 @@ your login shell. Safe to re-run.
 stow/
   fish/.config/fish/…       # config.fish, functions/
   niri/.config/niri/…       # config.kdl
+  hypr/.config/hypr/…       # hyprland.lua — Hyprland trial config, mirrors niri's
+                             #   scrolling-layout keybinds as closely as Hyprland allows
   noctalia/.config/noctalia/…  # settings.json, plugins.json, plugins/
-  scripts/.local/bin/…      # desktop-entry-maker, hide-apps, sync-*
+  scripts/.local/bin/…      # desktop-entry-maker, hide-apps, sync-*,
+                             #   hypr-toggle-maximize-column
 systemd/                    # copied to ~/.config/systemd/user/, not stowed
 system/                      # root-owned /etc files, installed via sudo, not stowed
   udev/99-visage-ir.rules
   systemd/visaged.service.d/override.conf
+  quickshell/noctalia-shell/…  # patches over the package's own /etc/xdg files
 packages.txt                # paru -S --needed (official repo + AUR, one list)
 install.sh
 ```
 
 Each top-level dir under `stow/` is a stow "package" — `stow -d stow -t ~
-fish niri noctalia scripts` symlinks its contents into `$HOME`, mirroring
+fish niri noctalia scripts hypr` symlinks its contents into `$HOME`, mirroring
 the path under it (e.g. `stow/fish/.config/fish/config.fish` →
 `~/.config/fish/config.fish`).
 
@@ -45,6 +51,8 @@ the path under it (e.g. `stow/fish/.config/fish/config.fish` →
 - `~/.config/noctalia/plugins/daily-wallpaper/downloads/` — cached wallpaper
   images, regenerates itself.
 - `niri/config.kdl.backup*` / `.dmsbackup*` — local backup cruft.
+- `~/.cache/hypr-colwidth/` — per-window column-width state written by
+  `hypr-toggle-maximize-column`, runtime scratch, not config.
 - The oh-my-posh binary itself, AppImages, and the `claude` symlink in
   `~/.local/bin` — reinstalled by `install.sh` or just not config.
 
@@ -60,6 +68,19 @@ included so a fresh install doesn't need to rediscover it.
   won't exist, and `visaged` will stay up but fail to authenticate (PAM
   falls through to your password, so nothing breaks, face-unlock just won't
   work until the rule's path is updated for that machine).
+- `system/quickshell/noctalia-shell/…` is a full-file patch against
+  noctalia-shell 4.7.7-3's stock `ToastService.qml`, `Toast.qml`,
+  `ToastScreen.qml`, `NImageRounded.qml`, and `NotificationService.qml` —
+  it routes real desktop notifications through the same toast UI as
+  internal events (consistent look, reliable auto-dismiss, real app
+  icons) instead of the stock notification card. Because it's a whole-file
+  replacement rather than a diff, a future noctalia-shell package update
+  can change those files upstream and `install.sh` will silently overwrite
+  the new version with this stale one — diff against the freshly installed
+  package before re-running after a noctalia-shell bump. Also masks
+  `mako.service`, which was racing noctalia's own notification server for
+  the dbus name and winning (mako itself isn't in `packages.txt` — it was
+  pulled in as niri's optional dependency by something, not intentional).
 
 ## Adding something new
 
