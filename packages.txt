@@ -39,6 +39,7 @@ visage-bin
 zed
 sddm
 sddm-astronaut-theme
+hyprmod
 
 nvidia-prime
 asusctl

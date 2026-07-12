@@ -61,7 +61,7 @@ local menu        = "hyprlauncher"
 hl.on("hyprland.start", function ()
   hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
   hl.exec_cmd("systemctl --user start xdg-desktop-portal-hyprland")
-  hl.exec_cmd("qs -c /usr/share/quickshell/dms")
+  hl.exec_cmd("~/.config/hypr/scripts/preload-wallpaper.sh")
 end)
 
 -------------------------------
@@ -106,7 +106,7 @@ hl.config({
         border_size = 2,
 
         col = {
-            active_border   = { colors = {"rgba(ffb86eee)", "rgba(bfcc9bee)"}, angle = 45 },
+            active_border   = { colors = {"rgba(f1c048ee)", "rgba(b0cfaaee)"}, angle = 45 },
             inactive_border = "rgba(595959aa)",
         },
 
@@ -235,7 +235,7 @@ hl.config({
 hl.config({
     misc = {
         force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
-        disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
+        disable_hyprland_logo   = true,  -- swaybg (preload-wallpaper.sh) covers the splash instead
     },
 })
 
@@ -263,10 +263,12 @@ hl.config({
 })
 
 -- Maps 3-finger horizontal swipes to fluidly drag the infinite tape layout
-hl.gesture({ 
-    fingers = 3, 
-    direction = "horizontal", 
-    action = "scroll_move" 
+-- scale > 1 makes swipe distance translate to more column movement (less "friction")
+hl.gesture({
+    fingers = 3,
+    direction = "horizontal",
+    action = "scroll_move",
+    scale = 2.0,
 })
 
 -- Example per-device config
@@ -288,7 +290,6 @@ hl.bind(mainMod .. " + Q",         hl.dsp.window.close())
 hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exec_cmd("hyprctl dispatch exit"))
 hl.bind(mainMod .. " + T",         hl.dsp.exec_cmd(terminal))
 hl.bind(mainMod .. " + E",         hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + D",         hl.dsp.exec_cmd("dms ipc call spotlight toggle"))
 hl.bind(mainMod .. " + Space",     hl.dsp.exec_cmd("qs -c noctalia-shell ipc call launcher toggle"))
 hl.bind(mainMod .. " + ALT + L",   hl.dsp.exec_cmd("swaylock"))
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch dpms off"))
@@ -314,6 +315,12 @@ hl.bind(mainMod .. " + CTRL + up",    hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + CTRL + down",  hl.dsp.window.move({ direction = "down" }))
 hl.bind(mainMod .. " + CTRL + H",     hl.dsp.layout("swapcol l"))
 hl.bind(mainMod .. " + CTRL + L",     hl.dsp.layout("swapcol r"))
+
+-- Like niri's Mod+[ / Mod+] (consume-or-expel-window-left/right): if the focused window is
+-- alone in its column, pull the adjacent column's window into it; if already sharing a column,
+-- kick it back out into its own column.
+hl.bind(mainMod .. " + bracketleft",  hl.dsp.layout("consume_or_expel prev"))
+hl.bind(mainMod .. " + bracketright", hl.dsp.layout("consume_or_expel next"))
 hl.bind(mainMod .. " + CTRL + K",     hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + CTRL + J",     hl.dsp.window.move({ direction = "down" }))
 
