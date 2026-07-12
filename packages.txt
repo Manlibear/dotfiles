@@ -26,7 +26,6 @@ matugen
 mesa-utils
 moonlight-qt
 networkmanager
-nvtop
 pake-cli
 papirus-icon-theme
 pavucontrol
@@ -40,7 +39,4 @@ zed
 sddm
 sddm-astronaut-theme
 hyprmod
-
-nvidia-prime
-asusctl
-rog-control-center
+ntfs-3g

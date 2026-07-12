@@ -30,7 +30,6 @@
             "FFPWA-01KW4WD5P3AQ94EW2GA07K9NPZ",
             "org.godotengine.Godot-mono",
             "discord",
-            "rog-control-center",
             "libreoffice-writer",
             "libreoffice-calc",
             "com.moonlight_stream.Moonlight",
@@ -191,8 +190,7 @@
                     "hidePassive": false,
                     "id": "Tray",
                     "pinned": [
-                        "steam",
-                        "ROG Control Center"
+                        "steam"
                     ]
                 },
                 {
@@ -241,10 +239,6 @@
     },
     "brightness": {
         "backlightDeviceMappings": [
-            {
-                "device": "/sys/class/backlight/nvidia_0",
-                "output": "eDP-1"
-            }
         ],
         "brightnessStep": 5,
         "enableDdcSupport": false,
