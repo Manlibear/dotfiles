@@ -1,0 +1,14 @@
+[General]
+font=Noto Sans,10,-1,5,50,0,0,0,0,0
+smallestReadableFont=Noto Sans,8,-1,5,50,0,0,0,0,0
+
+[Icons]
+Theme=noctalia-folders
+
+[KDE]
+ShowDeleteCommand=false
+widgetStyle=kvantum
+
+[PreviewSettings]
+EnableRemoteFolderThumbnail=false
+MaximumRemoteSize=0

@@ -1,4 +1,3 @@
-niri
 hyprland
 xdg-desktop-portal-hyprland
 grimblast-git
@@ -37,6 +36,9 @@ usbutils
 visage-bin
 zed
 sddm
-sddm-astronaut-theme
 hyprmod
 ntfs-3g
+dolphin
+kvantum-git
+kvantum-qt5
+qt6ct-kde

@@ -1,0 +1,19 @@
+[config]
+
+[templates]
+
+# User-defined templates
+# Add your custom templates below
+# Example:
+# [templates.myapp]
+# input_path = "~/.config/noctalia/templates/myapp.css"
+# output_path = "~/.config/myapp/theme.css"
+# post_hook = "myapp --reload-theme"
+
+[templates.sddm]
+input_path="/usr/share/sddm/themes/noctalia/theme.template.conf"
+output_path="/usr/share/sddm/themes/noctalia/theme.conf"
+
+[templates.kvantum-dolphin]
+input_path="/home/manlibear/.config/Kvantum/KvNoctalia/KvNoctalia.kvconfig.template"
+output_path="/home/manlibear/.config/Kvantum/KvNoctalia/KvNoctalia.kvconfig"

@@ -73,6 +73,10 @@ end)
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 
+-- Hybrid Intel/NVIDIA laptop: disables explicit sync on buffers crossing GPUs,
+-- works around VK_ERROR_SURFACE_LOST_KHR crashes in Vulkan clients (e.g. Moonlight)
+hl.env("AQ_MGPU_NO_EXPLICIT", "1")
+
 
 -----------------------
 ----- PERMISSIONS -----
@@ -106,7 +110,7 @@ hl.config({
         border_size = 2,
 
         col = {
-            active_border   = { colors = {"rgba(f1c048ee)", "rgba(b0cfaaee)"}, angle = 45 },
+            active_border   = { colors = {"rgba(99cbffee)", "rgba(d4bee6ee)"}, angle = 45 },
             inactive_border = "rgba(595959aa)",
         },
 
@@ -296,7 +300,7 @@ hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd("hyprctl dispatch dpms off"))
 
 -- Focus navigation (arrows + HJKL)
 -- Uses the scrolling layout's own "focus" message, which auto-scrolls the viewport to bring
--- an off-screen column into view (like niri), unlike the generic movefocus dispatcher.
+-- an off-screen column into view, unlike the generic movefocus dispatcher.
 hl.bind(mainMod .. " + left",  hl.dsp.layout("focus l"))
 hl.bind(mainMod .. " + right", hl.dsp.layout("focus r"))
 hl.bind(mainMod .. " + up",    hl.dsp.layout("focus u"))
@@ -307,8 +311,8 @@ hl.bind(mainMod .. " + K",     hl.dsp.layout("focus u"))
 hl.bind(mainMod .. " + J",     hl.dsp.layout("focus d"))
 
 -- Move window (arrows + HJKL)
--- Left/right use the scrolling layout's own column reorder message (like niri's move-column-left/right)
--- instead of the generic window-move dispatcher, which pulls the window into the adjacent column/stack.
+-- Left/right use the scrolling layout's own column reorder message instead of the generic
+-- window-move dispatcher, which pulls the window into the adjacent column/stack.
 hl.bind(mainMod .. " + CTRL + left",  hl.dsp.layout("swapcol l"))
 hl.bind(mainMod .. " + CTRL + right", hl.dsp.layout("swapcol r"))
 hl.bind(mainMod .. " + CTRL + up",    hl.dsp.window.move({ direction = "up" }))
@@ -316,9 +320,8 @@ hl.bind(mainMod .. " + CTRL + down",  hl.dsp.window.move({ direction = "down" })
 hl.bind(mainMod .. " + CTRL + H",     hl.dsp.layout("swapcol l"))
 hl.bind(mainMod .. " + CTRL + L",     hl.dsp.layout("swapcol r"))
 
--- Like niri's Mod+[ / Mod+] (consume-or-expel-window-left/right): if the focused window is
--- alone in its column, pull the adjacent column's window into it; if already sharing a column,
--- kick it back out into its own column.
+-- If the focused window is alone in its column, pull the adjacent column's window into it;
+-- if already sharing a column, kick it back out into its own column.
 hl.bind(mainMod .. " + bracketleft",  hl.dsp.layout("consume_or_expel prev"))
 hl.bind(mainMod .. " + bracketright", hl.dsp.layout("consume_or_expel next"))
 hl.bind(mainMod .. " + CTRL + K",     hl.dsp.window.move({ direction = "up" }))
@@ -344,7 +347,7 @@ hl.bind(mainMod .. " + SHIFT + CTRL + L",     hl.dsp.exec_cmd("hyprctl dispatch 
 hl.bind(mainMod .. " + SHIFT + CTRL + K",     hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:u"))
 hl.bind(mainMod .. " + SHIFT + CTRL + J",     hl.dsp.exec_cmd("hyprctl dispatch movewindow mon:d"))
 
--- Workspace navigation (Super+U/I = down/up, matching niri)
+-- Workspace navigation (Super+U/I = down/up)
 hl.bind(mainMod .. " + U",          hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + I",          hl.dsp.focus({ workspace = "e-1" }))
 hl.bind(mainMod .. " + Page_Down",  hl.dsp.focus({ workspace = "e+1" }))
@@ -372,7 +375,7 @@ hl.bind(mainMod .. " + SHIFT + mouse_up",   hl.dsp.focus({ direction = "left" })
 
 -- Window management
 hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen())
--- Toggle focused column to full width and back, like niri's maximize-column.
+-- Toggle focused column to full width and back.
 -- Reads the window's actual current geometry (via helper script) instead of a
 -- remembered flag, so it stays correct even if width changed some other way
 -- (Super+R, mouse drag, etc) since the last press.
@@ -380,7 +383,7 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.local/bin/hyp
 hl.bind(mainMod .. " + V",         hl.dsp.window.float({ action = "toggle" }))
 hl.bind(mainMod .. " + C",         hl.dsp.window.center())
 
--- Scrolling layout: cycle column width presets (like niri Super+R)
+-- Scrolling layout: cycle column width presets
 hl.bind(mainMod .. " + R",         hl.dsp.layout("colresize +conf"))
 
 -- Resize window
@@ -398,13 +401,13 @@ hl.bind("ALT + Print",             hl.dsp.exec_cmd("grimblast --notify copysave 
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Volume (10% steps to match niri)
+-- Volume (10% steps)
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 10%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 10%-"),      { locked = true, repeating = true })
 hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),      { locked = true })
 hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),    { locked = true })
 
--- Brightness (10% steps to match niri)
+-- Brightness (10% steps)
 hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd("brightnessctl --class=backlight set 10%+"), { locked = true, repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl --class=backlight set 10%-"), { locked = true, repeating = true })
 
@@ -466,6 +469,37 @@ hl.window_rule({
     float = true,
 })
 
+-- Force Moonlight to open fullscreen regardless of its own display-mode setting/flag
+hl.window_rule({
+    name  = "moonlight-fullscreen",
+    match = { class = "(?i)^(com\\.moonlight_stream\\.moonlight|moonlight)$" },
+
+    fullscreen = true,
+})
+
+-- Zed always opens taking the full column width in the scrolling layout
+hl.window_rule({
+    name  = "zed-full-width-column",
+    match = { class = "^dev\\.zed\\.Zed$" },
+
+    scrolling_width = 1.0,
+})
+
+-- Dolphin: semi-transparent, paired with the KvNoctalia Kvantum theme
+-- (stow/kde). Same opacity for active/inactive (matches kitty's own
+-- background_opacity — no separate focus states there either) since a
+-- window that gets lighter/less blurred just for losing focus reads as a
+-- bug, not a feature. No separate "blur" rule needed — decoration.blur.enabled
+-- is already on globally, so any window with opacity < 1 gets a blurred
+-- backdrop automatically; hl.window_rule doesn't expose a per-window blur
+-- field anyway (that's only on hl.layer_rule).
+hl.window_rule({
+    name  = "dolphin-transparency",
+    match = { class = "^org\\.kde\\.dolphin$" },
+
+    opacity = "0.93 0.93",
+})
+
 
 hl.on("hyprland.start", function()
   hl.exec_cmd("qs -c noctalia-shell")
@@ -477,3 +511,6 @@ hl.config({
         prefer_hdr = 1,
     },
 })
+
+-- HyprMod managed settings
+require("hyprland-gui")

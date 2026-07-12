@@ -443,16 +443,16 @@
         "telemetryEnabled": false
     },
     "hooks": {
-        "colorGeneration": "",
+        "colorGeneration": "$HOME/.local/bin/sync-hypr-border && $HOME/.local/bin/sync-folder-color",
         "darkModeChange": "",
-        "enabled": false,
+        "enabled": true,
         "performanceModeDisabled": "",
         "performanceModeEnabled": "",
         "screenLock": "",
         "screenUnlock": "",
         "session": "",
         "startup": "",
-        "wallpaperChange": ""
+        "wallpaperChange": "/usr/share/sddm/themes/noctalia/sync-shell-wallpaper.sh"
     },
     "idle": {
         "customCommands": "[]",
@@ -650,8 +650,10 @@
     },
     "templates": {
         "activeTemplates": [
+            "sddm",
+            "kvantum-dolphin"
         ],
-        "enableUserTheming": false
+        "enableUserTheming": true
     },
     "ui": {
         "boxBorderEnabled": true,

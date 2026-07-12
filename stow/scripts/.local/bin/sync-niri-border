@@ -1,4 +1,0 @@
-#!/bin/bash
-PRIMARY=$(jq -r '.mPrimary' ~/.config/noctalia/colors.json)
-TERTIARY=$(jq -r '.mTertiary' ~/.config/noctalia/colors.json)
-sed -i "s/active-gradient from=\"#[0-9a-fA-F]*\" to=\"#[0-9a-fA-F]*\"\(.*\)/active-gradient from=\"$PRIMARY\" to=\"$TERTIARY\" angle=45 relative-to=\"workspace-view\"/" ~/.config/niri/config.kdl

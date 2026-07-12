@@ -50,14 +50,14 @@ paru -S --needed $(<packages.txt)
 
 # --- 4. Symlink config files with stow --------------------------------------
 #
-# Some packages (niri notably) seed a default config file on first launch if
-# none exists yet. If that happened before this script ran — e.g. the
-# install media auto-started a session — stow refuses to overwrite a real
-# file with a symlink. Move any such real file aside first so our tracked
-# version wins; back it up rather than deleting in case there's something
-# worth diffing later.
+# Some packages seed a default config file on first launch if none exists
+# yet. If that happened before this script ran — e.g. the install media
+# auto-started a session — stow refuses to overwrite a real file with a
+# symlink. Move any such real file aside first so our tracked version wins;
+# back it up rather than deleting in case there's something worth diffing
+# later.
 BACKUP_DIR="$HOME/.dotfiles-preexisting-$(date +%Y%m%d-%H%M%S)"
-STOW_PACKAGES="fish niri noctalia scripts hypr"
+STOW_PACKAGES="fish noctalia scripts hypr kde"
 for pkg in $STOW_PACKAGES; do
     while IFS= read -r -d '' src; do
         rel="${src#stow/$pkg/}"
@@ -172,11 +172,12 @@ done
 #     consistent look and an animation-driven dismiss instead of a polling
 #     timer; also plumb a real app icon/avatar through the toast (falls
 #     back to a generic glyph when the sender doesn't supply one)
-#   - mako (installed by something pulling it in as niri's optional dep,
-#     never listed in packages.txt) was racing noctalia's own
-#     NotificationServer for that dbus name and usually winning, which is
-#     why patching noctalia's QML alone did nothing — masked via systemctl
-#     below so it can never grab the name even if it reappears
+#   - mako (previously pulled in as niri's optional dep, back when this
+#     machine ran niri; never listed in packages.txt) was racing noctalia's
+#     own NotificationServer for that dbus name and usually winning, which
+#     is why patching noctalia's QML alone did nothing — masked via
+#     systemctl below so it can never grab the name even if something
+#     pulls it back in again
 # These are full-file replacements of package-owned files under
 # /etc/xdg/quickshell — a noctalia-shell update can change those files
 # upstream, and re-running this step will blindly overwrite any upstream
@@ -198,7 +199,46 @@ while IFS= read -r -d '' src; do
     sudo cp "$src" "$target"
 done < <(find system/quickshell/noctalia-shell -type f -print0)
 
-# --- 9. Default shell --------------------------------------------------------
+# --- 9. Noctalia SDDM theme --------------------------------------------------
+#
+# Not an AUR package — vendored by cloning mda-dev/noctalia-sddm-theme and
+# copying its files into place, mirroring what its own installer does:
+#   - theme files -> /usr/share/sddm/themes/noctalia
+#   - theme.conf + Assets/background.png chmod 666 so noctalia-shell (running
+#     as your user) can rewrite them when templates/hooks fire (root-owned
+#     otherwise, since sddm reads them as root)
+#   - /etc/sddm.conf.d/theme.conf -> Current=noctalia (system/sddm/theme.conf)
+# Color sync (theme.template.conf -> theme.conf) and wallpaper sync
+# (sync-shell-wallpaper.sh) are wired up on the noctalia-shell side via
+# stow/noctalia's user-templates.toml and settings.json hooks.wallpaperChange.
+if pacman -Qi sddm-astronaut-theme >/dev/null 2>&1; then
+    log "Removing sddm-astronaut-theme (replaced by noctalia theme)"
+    sudo pacman -R --noconfirm sddm-astronaut-theme
+fi
+
+SDDM_THEME_DEST="/usr/share/sddm/themes/noctalia"
+if [ ! -d "$SDDM_THEME_DEST" ]; then
+    log "Installing Noctalia SDDM theme"
+    tmp=$(mktemp -d)
+    git clone --depth 1 https://github.com/mda-dev/noctalia-sddm-theme.git "$tmp"
+    sudo mkdir -p "$SDDM_THEME_DEST"
+    sudo cp -r "$tmp"/Assets "$tmp"/Components "$tmp"/Main.qml "$tmp"/Globals.qml \
+        "$tmp"/qmldir "$tmp"/metadata.desktop "$tmp"/theme.conf \
+        "$tmp"/theme.template.conf "$tmp"/sync-shell-wallpaper.sh "$SDDM_THEME_DEST/"
+    rm -rf "$tmp"
+fi
+sudo chmod 666 "$SDDM_THEME_DEST/theme.conf" "$SDDM_THEME_DEST/Assets/background.png"
+
+sddm_theme_target="/etc/sddm.conf.d/theme.conf"
+if [ -e "$sddm_theme_target" ] && ! cmp -s system/sddm/theme.conf "$sddm_theme_target"; then
+    log "Backing up pre-existing $sddm_theme_target"
+    mkdir -p "$BACKUP_DIR/etc/sddm.conf.d"
+    sudo cp "$sddm_theme_target" "$BACKUP_DIR/etc/sddm.conf.d/"
+fi
+sudo mkdir -p "$(dirname "$sddm_theme_target")"
+sudo cp system/sddm/theme.conf "$sddm_theme_target"
+
+# --- 10. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"
@@ -206,4 +246,4 @@ fi
 
 [ -d "$BACKUP_DIR" ] && log "Pre-existing files backed up to $BACKUP_DIR"
 log "Done. Run 'visage enroll' to set up face-unlock (your face data isn't tracked)."
-log "Log out/in (or reboot) to pick up the shell change and niri session."
+log "Log out/in (or reboot) to pick up the shell change and Hyprland session."

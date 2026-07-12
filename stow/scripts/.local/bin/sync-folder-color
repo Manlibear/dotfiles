@@ -15,7 +15,8 @@ r, g, b = int(r*0.8), int(g*0.8), int(b*0.8)
 print(f'#{r:02x}{g:02x}{b:02x}')
 ")
 
-for src in "$ICON_SRC"/*/places/folder-blue*.svg "$ICON_SRC"/*/places/user-blue*.svg; do
+for src in "$ICON_SRC"/*/places/folder-blue*.svg "$ICON_SRC"/*/places/user-blue*.svg \
+           "$ICON_SRC"/*/places/folder.svg "$ICON_SRC"/*/places/folder-open.svg; do
     [[ -f "$src" ]] || continue
     size=$(echo "$src" | grep -oP '\d+x\d+(@\d+x)?')
     basename=$(basename "$src")
@@ -24,9 +25,21 @@ for src in "$ICON_SRC"/*/places/folder-blue*.svg "$ICON_SRC"/*/places/user-blue*
 
     sed "s/#5294e2/$PRIMARY/g; s/#4877b1/$DARK/g; s/#1d344f/$ON_PRIMARY/g" "$src" > "$dst_dir/$basename"
 
-    # Symlink: folder-blue-pictures.svg -> folder-pictures.svg etc.
+    # Symlink: folder-blue-pictures.svg -> folder-pictures.svg etc. Plain
+    # folder.svg/folder-open.svg have no "-blue" to strip, so this is a
+    # same-name no-op for them — skip it rather than self-symlink.
     symlink="${basename//-blue/}"
-    ln -sf "$basename" "$dst_dir/$symlink"
+    [[ "$symlink" == "$basename" ]] || ln -sf "$basename" "$dst_dir/$symlink"
+
+    # File managers mostly look up folders by MIME type ("inode-directory"),
+    # not the generic "folder" name — without this, that lookup skips our
+    # recolored folder.svg entirely and falls through to Papirus-Dark's
+    # stock-blue original (Papirus itself only has inode-directory.svg as a
+    # 16x16 symlink to folder.svg, so bigger sizes were falling all the way
+    # through unrecolored).
+    if [[ "$basename" == "folder.svg" ]]; then
+        ln -sf "$basename" "$dst_dir/inode-directory.svg"
+    fi
 done
 
 gtk4-update-icon-cache -f -t "$ICON_DST" 2>/dev/null || true
