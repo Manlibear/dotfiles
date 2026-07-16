@@ -1,3 +1,4 @@
+niri
 hyprland
 xdg-desktop-portal-hyprland
 grimblast-git

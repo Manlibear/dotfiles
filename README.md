@@ -1,7 +1,8 @@
 # dotfiles
 
-Personal Arch Linux config: Hyprland, noctalia, fish (+ oh-my-posh), a few
-custom scripts, and the systemd user units that glue them together.
+Personal Arch Linux config: Hyprland and niri (both kept side-by-side, switch
+at the login screen), noctalia, fish (+ oh-my-posh), a few custom scripts, and
+the systemd user units that glue them together.
 
 ## Fresh install
 
@@ -26,6 +27,7 @@ stow/
   fish/.config/fish/…       # config.fish, functions/
   hypr/.config/hypr/…       # hyprland.lua — Hyprland's own Lua config format,
                              #   scripts/preload-wallpaper.sh
+  niri/.config/niri/…       # config.kdl — niri's own KDL config format
   kde/.config/…              # kdeglobals (widgetStyle=kvantum, noctalia-folders
                              #   icon theme), Kvantum/kvantum.kvconfig,
                              #   Kvantum/KvNoctalia/KvNoctalia.kvconfig.template,
@@ -48,7 +50,7 @@ install.sh
 ```
 
 Each top-level dir under `stow/` is a stow "package" — `stow -d stow -t ~
-fish noctalia scripts hypr kde` symlinks its contents into `$HOME`, mirroring
+fish noctalia scripts hypr niri kde` symlinks its contents into `$HOME`, mirroring
 the path under it (e.g. `stow/fish/.config/fish/config.fish` →
 `~/.config/fish/config.fish`).
 
@@ -92,17 +94,20 @@ included so a fresh install doesn't need to rediscover it.
   can change those files upstream and `install.sh` will silently overwrite
   the new version with this stale one — diff against the freshly installed
   package before re-running after a noctalia-shell bump. Also masks
-  `mako.service`, which was racing noctalia's own notification server for
-  the dbus name and winning back when this machine ran niri (mako pulled
-  it in as an optional dep; it's gone now that niri is, but the mask stays
-  as a defensive measure in case something else drags it back in).
+  `mako.service`, which niri pulls in as an optional dep and which races
+  noctalia's own notification server for the dbus name (and usually wins) —
+  the mask stays regardless of which compositor is active, since niri is
+  back in the mix alongside Hyprland.
 
-Hyprland border colors and the Papirus folder-icon recolor
-(`sync-hypr-border`, `sync-folder-color` under `stow/scripts`) aren't
-triggered by a systemd watcher — they're wired into noctalia-shell's own
-`hooks.colorGeneration` hook (`stow/noctalia`'s `settings.json`), which
-fires whenever noctalia regenerates `colors.json`, whether that's from a
-wallpaper change or a manual scheme switch. `sync-folder-color` recolors
+Hyprland and niri border colors and the Papirus folder-icon recolor
+(`sync-hypr-border`, `sync-niri-border`, `sync-folder-color` under
+`stow/scripts`) aren't triggered by a systemd watcher — they're wired into
+noctalia-shell's own `hooks.colorGeneration` hook (`stow/noctalia`'s
+`settings.json`), which fires whenever noctalia regenerates `colors.json`,
+whether that's from a wallpaper change or a manual scheme switch. Both
+border-sync scripts also push the same primary color to the keyboard/case
+RGB via `asusctl aura effect static -c`, so the ROG Aura lighting stays in
+sync regardless of which compositor is active. `sync-folder-color` recolors
 Papirus-Dark's `folder-blue*`/`user-blue*` variants (symlinked down to their
 unsuffixed names — `folder-blue-pictures.svg` → `folder-pictures.svg`) *and*
 the plain `folder.svg`/`folder-open.svg` used for ordinary, uncategorized

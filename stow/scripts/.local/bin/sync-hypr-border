@@ -3,5 +3,5 @@ PRIMARY=$(jq -r '.mPrimary' ~/.config/noctalia/colors.json | tr -d '#')
 TERTIARY=$(jq -r '.mTertiary' ~/.config/noctalia/colors.json | tr -d '#')
 
 sed -i -E "s/active_border[[:space:]]*=[[:space:]]*\{ colors = \{\"rgba\([0-9a-fA-F]*\)\", \"rgba\([0-9a-fA-F]*\)\"\}, angle = [0-9]* \}/active_border   = { colors = {\"rgba(${PRIMARY}ee)\", \"rgba(${TERTIARY}ee)\"}, angle = 45 }/" ~/.config/hypr/hyprland.lua
-
+asusctl aura effect static -c "${PRIMARY#\#}"
 pgrep -x Hyprland > /dev/null && hyprctl reload

@@ -57,7 +57,7 @@ paru -S --needed $(<packages.txt)
 # back it up rather than deleting in case there's something worth diffing
 # later.
 BACKUP_DIR="$HOME/.dotfiles-preexisting-$(date +%Y%m%d-%H%M%S)"
-STOW_PACKAGES="fish noctalia scripts hypr kde"
+STOW_PACKAGES="fish noctalia scripts hypr niri kde"
 for pkg in $STOW_PACKAGES; do
     while IFS= read -r -d '' src; do
         rel="${src#stow/$pkg/}"
