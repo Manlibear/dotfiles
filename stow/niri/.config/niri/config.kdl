@@ -118,10 +118,10 @@ output "Thermotrex Corporation TL160ADMP03-0 Unknown" {
 layout {
     // Set gaps around windows in logical pixels.
     gaps 16
-   
-    
 
-    
+
+
+
 
     // When to center a column when changing focus, options are:
     // - "never", default behavior, focusing an off-screen column will keep at the left
@@ -182,7 +182,7 @@ layout {
 
         // Gradients can use a few different interpolation color spaces.
         // For example, this is a pastel rainbow gradient via in="oklch longer hue".
-        
+
 	active-gradient from="#ffb595" to="#d2c78f" angle=45 relative-to="workspace-view"
         // inactive-gradient from="#ffb595" to="#d2c78f" angle=45 relative-to="workspace-view"
     }
@@ -249,7 +249,6 @@ spawn-at-startup "qs" "-c" "noctalia-shell"
 spawn-at-startup "xwayland-satellite"
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
 spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP=niri"
-spawn-at-startup "bash" "-c" "nautilus &"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -331,7 +330,13 @@ window-rule {
 window-rule {
     match app-id="^kitty$"
     draw-border-with-background false
-    opacity 0.8
+    opacity 0.85
+}
+
+window-rule{
+    match app-id="^org.kde.dolphin$"
+    draw-border-with-background false
+    opacity 0.94
 }
 
 window-rule {
@@ -342,6 +347,16 @@ window-rule {
 window-rule {
     match app-id="^CitySim$"
     open-floating false
+}
+
+window-rule{
+    match app-id="^dev.zed.Zed$"
+    default-column-width {proportion 1.0;}
+}
+
+window-rule{
+   match app-id="Godot"
+   default-column-width {proportion 1.0;}
 }
 
 // enable rounded corners for all windows.
@@ -559,8 +574,8 @@ binds {
 
     // Cycle through widths set in preset-column-widths.
     Mod+R { switch-preset-column-width; }
-    
-    
+
+
 
     Mod+Ctrl+Shift+R { switch-preset-window-height; }
     Mod+Ctrl+R { reset-window-height; }
@@ -572,7 +587,7 @@ binds {
     // maximize-window-to-edges doesn't: the window expands to the edges of the screen.
     // This bind corresponds to normal window maximizing,
     // e.g. by double-clicking on the titlebar.
-    
+
 
     // Expand the focused column to space not taken up by other fully visible columns.
     // Makes the column "fill the rest of the space".
@@ -646,11 +661,6 @@ environment {
     QT_QPA_PLATFORM "wayland"
     GDK_BACKEND "wayland,x11"
 }
-
-include "dms/cursor.kdl"
-
-include "dms/windowrules.kdl"
-include "dms/binds.kdl"
 
 // Custom rules (kept here, not in dms/windowrules.kdl, since that file is
 // DMS-managed and gets overwritten).

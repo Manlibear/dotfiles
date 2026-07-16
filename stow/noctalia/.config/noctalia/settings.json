@@ -443,7 +443,7 @@
         "telemetryEnabled": false
     },
     "hooks": {
-        "colorGeneration": "$HOME/.local/bin/sync-hypr-border && $HOME/.local/bin/sync-niri-border && $HOME/.local/bin/sync-folder-color",
+        "colorGeneration": "$HOME/.local/bin/sync-hypr-border ; $HOME/.local/bin/sync-niri-border ; $HOME/.local/bin/sync-folder-color",
         "darkModeChange": "",
         "enabled": true,
         "performanceModeDisabled": "",
@@ -707,7 +707,7 @@
         "wallhavenCategories": "111",
         "wallhavenOrder": "desc",
         "wallhavenPurity": "100",
-        "wallhavenQuery": "cherry tree",
+        "wallhavenQuery": "ocean",
         "wallhavenRatios": "",
         "wallhavenResolutionHeight": "",
         "wallhavenResolutionMode": "atleast",
