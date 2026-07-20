@@ -72,6 +72,11 @@ done
 
 log "Stowing dotfiles"
 mkdir -p "$HOME/.local/bin"
+# GamesBacklog (Noctalia bar widget + TUI, cloned separately into
+# ~/Projects/GamesBacklog) reads/writes its library and downloaded cover
+# cache here rather than inside the repo — create it so both work on a
+# fresh machine before the app has run once.
+mkdir -p "$HOME/.local/share/gamesbacklog/covers"
 stow -d stow -t "$HOME" --restow $STOW_PACKAGES
 
 # --- 5. oh-my-posh (fish prompt) --------------------------------------------

@@ -156,6 +156,10 @@
             ],
             "right": [
                 {
+                    "defaultSettings": {},
+                    "id": "plugin:games-backlog"
+                },
+                {
                     "defaultSettings": {
                         "precision": 8,
                         "showBarValue": true
