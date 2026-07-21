@@ -243,7 +243,43 @@ fi
 sudo mkdir -p "$(dirname "$sddm_theme_target")"
 sudo cp system/sddm/theme.conf "$sddm_theme_target"
 
-# --- 10. Default shell --------------------------------------------------------
+# --- 10. GitHub CLI login -----------------------------------------------------
+#
+# Interactive (opens a browser/device-code prompt) so it has to run here
+# rather than earlier, before github-cli even exists. Once this is done, the
+# SSH key step below can register the new key automatically instead of
+# printing manual instructions.
+if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
+    log "Logging into GitHub CLI"
+    gh auth login
+fi
+
+# --- 11. SSH key ---------------------------------------------------------------
+#
+# Always generate a new key for this machine rather than copying one over
+# from another laptop: if this machine is ever lost or compromised, only its
+# own key needs revoking on GitHub instead of rotating a key shared across
+# every device you own.
+SSH_KEY="$HOME/.ssh/id_ed25519"
+if [ ! -f "$SSH_KEY" ]; then
+    log "Generating a new SSH key for this machine"
+    mkdir -p "$HOME/.ssh"
+    ssh-keygen -t ed25519 -C "$(whoami)@$(hostname)" -f "$SSH_KEY" -N ""
+    eval "$(ssh-agent -s)" >/dev/null
+    ssh-add "$SSH_KEY"
+
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        log "Registering the new key with GitHub"
+        gh ssh-key add "$SSH_KEY.pub" --title "$(hostname)-$(date +%Y%m%d)"
+    else
+        log "gh isn't authenticated yet, so the key wasn't registered automatically."
+        log "Run 'gh auth login', then 'gh ssh-key add $SSH_KEY.pub', or add it manually:"
+        echo "  https://github.com/settings/ssh/new"
+        cat "$SSH_KEY.pub"
+    fi
+fi
+
+# --- 12. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"

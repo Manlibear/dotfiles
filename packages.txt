@@ -43,3 +43,5 @@ dolphin
 kvantum-git
 kvantum-qt5
 qt6ct-kde
+github-cli
+openssh
