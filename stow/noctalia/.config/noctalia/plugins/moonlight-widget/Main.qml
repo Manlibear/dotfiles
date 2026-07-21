@@ -36,7 +36,7 @@ Item {
             return;
         isConnecting = true;
         connectTimer.start();
-        Quickshell.execDetached(["sh", "-c", "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/intel_icd.json moonlight stream \"" + bearIp + "\" Desktop --display-mode fullscreen > ~/.cache/moonlight-last-session.log 2>&1"]);
+        Quickshell.execDetached(["sh", "-c", "moonlight stream \"" + bearIp + "\" Desktop --display-mode fullscreen > ~/.cache/moonlight-last-session.log 2>&1"]);
     }
 
     Process {

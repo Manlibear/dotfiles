@@ -9,6 +9,11 @@ set -gx WLR_RENDERER vulkan
 # fish_variables state file, not to anything dotfiles ships).
 fish_add_path $HOME/.local/bin
 
+
+
+set -g fish_greeting
+
+
 oh-my-posh init fish --config "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/refs/heads/main/themes/amro.omp.json" | source
 
 

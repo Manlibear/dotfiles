@@ -117,7 +117,7 @@
                 },
                 {
                     "compactMode": false,
-                    "diskPath": "/home",
+                    "diskPath": "/",
                     "iconColor": "none",
                     "id": "SystemMonitor",
                     "showCpuCores": false,
@@ -156,7 +156,8 @@
             ],
             "right": [
                 {
-                    "defaultSettings": {},
+                    "defaultSettings": {
+                    },
                     "id": "plugin:games-backlog"
                 },
                 {
@@ -387,7 +388,7 @@
         "animationDisabled": false,
         "animationSpeed": 1,
         "autoStartAuth": false,
-        "avatarImage": "/home/manlibear/Pictures/manlibear.png",
+        "avatarImage": "/home/manlibear/.face",
         "boxRadiusRatio": 1,
         "clockFormat": "hh\\nmm",
         "clockStyle": "custom",
@@ -495,7 +496,7 @@
         "bluetoothRssiPollIntervalMs": 60000,
         "bluetoothRssiPollingEnabled": false,
         "disableDiscoverability": false,
-        "networkPanelView": "wifi",
+        "networkPanelView": "ethernet",
         "wifiDetailsViewMode": "grid"
     },
     "nightLight": {
