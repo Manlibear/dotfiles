@@ -45,3 +45,6 @@ kvantum-qt5
 qt6ct-kde
 github-cli
 openssh
+snapper
+snap-pac
+grub-btrfs

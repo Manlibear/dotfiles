@@ -17,8 +17,11 @@ symlinks everything under `stow/` into `$HOME` with GNU Stow, installs
 oh-my-posh, installs + enables the systemd user units, wires up visage
 face-unlock (udev rule + systemd override + PAM), patches noctalia-shell's
 notification handling (see below) and masks mako, vendors the Noctalia SDDM
-theme and the KvNoctalia Kvantum theme and activates both, and offers to set
-fish as your login shell. Safe to re-run.
+theme and the KvNoctalia Kvantum theme and activates both, logs into `gh`,
+generates a new per-machine SSH key and registers it with GitHub, sets up
+snapper + grub-btrfs for btrfs snapshot rollback (assumes the `@`/`@home`
+subvolume layout from `archinstall`; no-ops if snapper/grub aren't in use),
+and offers to set fish as your login shell. Safe to re-run.
 
 ## Niri HDR (optional)
 

@@ -279,7 +279,46 @@ if [ ! -f "$SSH_KEY" ]; then
     fi
 fi
 
-# --- 12. Default shell --------------------------------------------------------
+# --- 12. Snapper + grub-btrfs (btrfs snapshot rollback) ----------------------
+#
+# Assumes the archinstall-time subvolume layout: @ -> /, @home -> /home, both
+# with their own @snapshots-style subvolume pre-mounted at .snapshots by
+# fstab. `snapper create-config` wants to create that .snapshots subvolume
+# itself, so on a machine where it already exists (from archinstall) it
+# errors out unless we clear the mountpoint first and let it take over -
+# this is the Arch-wiki-documented workaround, not a hack specific to this
+# script. No-op on machines without snapper (e.g. still on rEFInd, no btrfs
+# rollback set up).
+if command -v snapper >/dev/null 2>&1; then
+    if [ ! -e /etc/snapper/configs/root ]; then
+        log "Creating snapper config for /"
+        sudo umount /.snapshots 2>/dev/null || true
+        sudo rmdir /.snapshots 2>/dev/null || true
+        sudo snapper -c root create-config /
+        sudo mount -a
+    fi
+
+    if mountpoint -q /home && [ ! -e /etc/snapper/configs/home ]; then
+        log "Creating snapper config for /home"
+        sudo umount /home/.snapshots 2>/dev/null || true
+        sudo rmdir /home/.snapshots 2>/dev/null || true
+        sudo snapper -c home create-config /home
+        sudo mount -a
+    fi
+
+    log "Enabling snapper timeline/cleanup timers"
+    sudo systemctl enable --now snapper-timeline.timer snapper-cleanup.timer
+fi
+
+# grub-btrfs adds a GRUB submenu to boot straight into a past snapshot.
+# Only relevant if GRUB is actually the bootloader in use.
+if command -v grub-mkconfig >/dev/null 2>&1; then
+    log "Enabling grub-btrfsd and regenerating GRUB config"
+    sudo systemctl enable --now grub-btrfsd.service
+    sudo grub-mkconfig -o /boot/grub/grub.cfg
+fi
+
+# --- 13. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"
