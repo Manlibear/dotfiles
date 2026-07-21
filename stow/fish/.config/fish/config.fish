@@ -4,6 +4,11 @@ end
 
 set -gx WLR_RENDERER vulkan
 
+# oh-my-posh (install.sh) lands here; fish's own PATH doesn't include it
+# by default on a fresh machine (fish_add_path persists to the untracked
+# fish_variables state file, not to anything dotfiles ships).
+fish_add_path $HOME/.local/bin
+
 oh-my-posh init fish --config "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/refs/heads/main/themes/amro.omp.json" | source
 
 

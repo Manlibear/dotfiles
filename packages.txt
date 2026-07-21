@@ -38,6 +38,8 @@ visage-bin
 zed
 sddm
 qt5-declarative
+qt5-graphicaleffects
+qt5-quickcontrols2
 hyprmod
 ntfs-3g
 dolphin

@@ -48,7 +48,25 @@ fi
 log "Installing packages"
 paru -S --needed $(<packages.txt)
 
-# --- 4. Symlink config files with stow --------------------------------------
+# --- 4. NetworkManager --------------------------------------------------------
+#
+# In packages.txt but never actually enabled - on a machine where wifi was
+# set up live during the install (e.g. `iwctl` from the Arch ISO), iwd +
+# systemd-networkd keep managing the interface after boot and nothing ever
+# switches over, so the connection genuinely works but NetworkManager (what
+# noctalia-shell's network widget actually queries) sees nothing and reports
+# offline. Hand the interface over properly instead of running both stacks
+# at once. This drops the current connection - NetworkManager likely has no
+# saved profile for it yet, so wifi needs reconnecting (e.g. via noctalia's
+# own network UI) once it's active.
+if ! systemctl is-active --quiet NetworkManager; then
+    log "Switching network management over to NetworkManager"
+    sudo systemctl disable --now iwd 2>/dev/null || true
+    sudo systemctl disable --now systemd-networkd 2>/dev/null || true
+    sudo systemctl enable --now NetworkManager
+fi
+
+# --- 5. Symlink config files with stow --------------------------------------
 #
 # Some packages seed a default config file on first launch if none exists
 # yet. If that happened before this script ran — e.g. the install media
@@ -56,13 +74,25 @@ paru -S --needed $(<packages.txt)
 # symlink. Move any such real file aside first so our tracked version wins;
 # back it up rather than deleting in case there's something worth diffing
 # later.
+#
+# Can't just check "is $target a symlink" (`[ -L "$target" ]`) - stow folds
+# a whole directory into a single symlink when the target directory doesn't
+# exist yet (e.g. ~/.config/noctalia -> .../stow/noctalia/.config/noctalia).
+# Every file reached *through* that folded directory then looks like a real,
+# non-symlink file at its own path, even though it's actually the tracked
+# repo file itself. Checking `-L` alone treats those as "real conflicting
+# files" and backs them up - which, on a re-run, means "mv"-ing the actual
+# repo file out into the backup dir, silently deleting it from the repo
+# checkout. Comparing resolved real paths instead correctly recognizes
+# "already points at our own tracked file" (direct symlink or folded parent
+# dir, either way) and only backs up genuine conflicts.
 BACKUP_DIR="$HOME/.dotfiles-preexisting-$(date +%Y%m%d-%H%M%S)"
-STOW_PACKAGES="fish noctalia scripts hypr niri kde"
+STOW_PACKAGES="fish noctalia scripts hypr niri kde kitty"
 for pkg in $STOW_PACKAGES; do
     while IFS= read -r -d '' src; do
         rel="${src#stow/$pkg/}"
         target="$HOME/$rel"
-        if [ -e "$target" ] && [ ! -L "$target" ]; then
+        if [ -e "$target" ] && [ "$(readlink -f "$target")" != "$(readlink -f "$src")" ]; then
             log "Backing up pre-existing $target"
             mkdir -p "$(dirname "$BACKUP_DIR/$rel")"
             mv "$target" "$BACKUP_DIR/$rel"
@@ -79,13 +109,13 @@ mkdir -p "$HOME/.local/bin"
 mkdir -p "$HOME/.local/share/gamesbacklog/covers"
 stow -d stow -t "$HOME" --restow $STOW_PACKAGES
 
-# --- 5. oh-my-posh (fish prompt) --------------------------------------------
+# --- 6. oh-my-posh (fish prompt) --------------------------------------------
 if ! command -v oh-my-posh >/dev/null 2>&1 && [ ! -x "$HOME/.local/bin/oh-my-posh" ]; then
     log "Installing oh-my-posh"
     curl -s https://ohmyposh.dev/install.sh | bash -s -- -d "$HOME/.local/bin"
 fi
 
-# --- 6. systemd --user units -------------------------------------------------
+# --- 7. systemd --user units -------------------------------------------------
 log "Installing systemd user units"
 mkdir -p "$HOME/.config/systemd/user"
 for unit in systemd/*.service; do
@@ -110,13 +140,12 @@ for unit in systemd/*.service; do
     systemctl --user enable --now "$(basename "$unit")"
 done
 
-# --- 7. Visage (face-unlock) system config -----------------------------------
+# --- 8. Visage (face-unlock) system config -----------------------------------
 #
 # visage-bin (in packages.txt) only installs the binary + its own systemd
 # units. Everything below is what actually makes it authenticate:
 #   - a udev rule mapping this laptop's IR camera to a stable /dev/video-ir
-#     symlink — HARDWARE-SPECIFIC (matches this exact USB path), won't do
-#     anything useful on different hardware
+#     symlink
 #   - a systemd drop-in pointing visaged at that device + liveness tuning
 #   - a pam_visage.so line in sudo/system-auth, positioned so it's tried
 #     first and falls through to your password on failure (PAM `sufficient`)
@@ -124,15 +153,48 @@ done
 # here — it's biometric data, not config. Run `visage enroll` after this.
 log "Installing visage system config"
 
+# The IR camera's USB bus path (ID_PATH) is different on every laptop, so a
+# statically tracked rule only ever worked on one machine at a time (learned
+# the hard way going from the Flow X16 to the Zenbook S16 - the tracked rule
+# silently matched nothing on the new hardware). Detect it live instead: on
+# both machines tested, the built-in IR sensor is the *second* video4linux
+# node that reports capture capability (the plain RGB webcam is always the
+# first). Not a hardware guarantee, just the pattern observed twice - if
+# visage doesn't authenticate after this, check `udevadm info -q property
+# --name=/dev/videoN` for each node yourself and adjust the detection below.
+log "Detecting IR camera for visage"
+ir_path=""
+capture_count=0
+for dev in /dev/video*; do
+    [ -e "$dev" ] || continue
+    if udevadm info -q property --name="$dev" 2>/dev/null | grep -q '^ID_V4L_CAPABILITIES=.*capture'; then
+        capture_count=$((capture_count + 1))
+        if [ "$capture_count" -eq 2 ]; then
+            ir_path=$(udevadm info -q property --name="$dev" 2>/dev/null | sed -n 's/^ID_PATH=//p')
+            break
+        fi
+    fi
+done
+
 udev_target="/etc/udev/rules.d/99-visage-ir.rules"
-if [ -e "$udev_target" ] && ! cmp -s system/udev/99-visage-ir.rules "$udev_target"; then
-    log "Backing up pre-existing $udev_target"
-    mkdir -p "$BACKUP_DIR/etc/udev/rules.d"
-    sudo cp "$udev_target" "$BACKUP_DIR/etc/udev/rules.d/"
+if [ -n "$ir_path" ]; then
+    # Match on capability too, not just ID_PATH - the IR sensor's capture
+    # node and its metadata-only sibling node share the same ID_PATH, and
+    # without this the symlink can land on whichever udev processes last,
+    # which may be the non-capture one (visaged then fails with "camera
+    # error: streaming not supported").
+    new_rule="SUBSYSTEM==\"video4linux\", ENV{ID_PATH}==\"$ir_path\", ENV{ID_V4L_CAPABILITIES}==\"*capture*\", SYMLINK+=\"video-ir\""
+    if [ -e "$udev_target" ] && ! grep -qF "$ir_path" "$udev_target"; then
+        log "Backing up pre-existing $udev_target"
+        mkdir -p "$BACKUP_DIR/etc/udev/rules.d"
+        sudo cp "$udev_target" "$BACKUP_DIR/etc/udev/rules.d/"
+    fi
+    echo "$new_rule" | sudo tee "$udev_target" >/dev/null
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+else
+    log "Could not auto-detect an IR camera - skipping the visage udev rule (only one capture-capable video4linux node found, or none)"
 fi
-sudo cp system/udev/99-visage-ir.rules "$udev_target"
-sudo udevadm control --reload-rules
-sudo udevadm trigger
 
 override_target="/etc/systemd/system/visaged.service.d/override.conf"
 if [ -e "$override_target" ] && ! cmp -s system/systemd/visaged.service.d/override.conf "$override_target"; then
@@ -142,6 +204,17 @@ if [ -e "$override_target" ] && ! cmp -s system/systemd/visaged.service.d/overri
 fi
 sudo mkdir -p "$(dirname "$override_target")"
 sudo cp system/systemd/visaged.service.d/override.conf "$override_target"
+
+# visage-bin doesn't ship the ONNX face-detection models - without this,
+# visaged crash-loops on missing det_10g.onnx and never registers on D-Bus,
+# which surfaces to `visage enroll` as a confusing
+# "org.freedesktop.DBus.Error.ServiceUnknown: not activatable" instead of
+# the actual "models missing" error.
+if [ ! -f /var/lib/visage/models/det_10g.onnx ]; then
+    log "Downloading visage's ONNX face-detection models"
+    sudo visage setup
+fi
+
 sudo systemctl daemon-reload
 sudo systemctl enable --now visaged.service
 sudo systemctl restart visaged.service   # pick up the drop-in if it changed
@@ -166,7 +239,7 @@ for pam_file in sudo system-auth; do
     fi
 done
 
-# --- 8. Noctalia notification patches ----------------------------------------
+# --- 9. Noctalia notification patches ----------------------------------------
 #
 # noctalia-shell's real desktop notifications (Discord etc.) render through
 # its stock Notification.qml card and only reliably auto-dismiss when
@@ -204,7 +277,7 @@ while IFS= read -r -d '' src; do
     sudo cp "$src" "$target"
 done < <(find system/quickshell/noctalia-shell -type f -print0)
 
-# --- 9. Noctalia SDDM theme --------------------------------------------------
+# --- 10. Noctalia SDDM theme --------------------------------------------------
 #
 # Not an AUR package — vendored by cloning mda-dev/noctalia-sddm-theme and
 # copying its files into place, mirroring what its own installer does:
@@ -217,13 +290,18 @@ done < <(find system/quickshell/noctalia-shell -type f -print0)
 # (sync-shell-wallpaper.sh) are wired up on the noctalia-shell side via
 # stow/noctalia's user-templates.toml and settings.json hooks.wallpaperChange.
 #
-# Needs `qt5-declarative` (in packages.txt) even though everything else here
-# is Qt6 - Arch's sddm package ships a Qt5-built sddm-greeter binary, and this
-# QML theme needs its libQt5Quick.so.5/libQt5Qml.so.5. Without it, sddm-helper
-# exits 127 on greeter start (dynamic linker abort) and SDDM looks broken in a
-# way that's easy to misdiagnose as a PAM/auth problem instead - the "Auth:"
-# log line is misleading, the actual failure is the greeter itself never
-# starting.
+# Needs `qt5-declarative`, `qt5-graphicaleffects`, and `qt5-quickcontrols2`
+# (all in packages.txt) even though everything else here is Qt6 - Arch's sddm
+# package ships a Qt5-built sddm-greeter binary, and this QML theme imports
+# QtGraphicalEffects/QtQuick.Controls/QtQuick.Layouts on top of the base
+# libQt5Quick.so.5/libQt5Qml.so.5. Missing `qt5-declarative` entirely makes
+# sddm-helper exit 127 on greeter start (dynamic linker abort) and SDDM looks
+# broken in a way that's easy to misdiagnose as a PAM/auth problem instead -
+# the "Auth:" log line is misleading, the actual failure is the greeter
+# itself never starting. Missing just `qt5-graphicaleffects`/
+# `qt5-quickcontrols2` is quieter: the greeter still starts and login still
+# works, but the blur/shadow/rounded-corner QML imports silently fail so the
+# theme looks plain/unstyled instead of crashing outright.
 if pacman -Qi sddm-astronaut-theme >/dev/null 2>&1; then
     log "Removing sddm-astronaut-theme (replaced by noctalia theme)"
     sudo pacman -R --noconfirm sddm-astronaut-theme
@@ -251,7 +329,7 @@ fi
 sudo mkdir -p "$(dirname "$sddm_theme_target")"
 sudo cp system/sddm/theme.conf "$sddm_theme_target"
 
-# --- 10. GitHub CLI login -----------------------------------------------------
+# --- 11. GitHub CLI login -----------------------------------------------------
 #
 # Interactive (opens a browser/device-code prompt) so it has to run here
 # rather than earlier, before github-cli even exists. Once this is done, the
@@ -262,7 +340,7 @@ if command -v gh >/dev/null 2>&1 && ! gh auth status >/dev/null 2>&1; then
     gh auth login
 fi
 
-# --- 11. SSH key ---------------------------------------------------------------
+# --- 12. SSH key ---------------------------------------------------------------
 #
 # Always generate a new key for this machine rather than copying one over
 # from another laptop: if this machine is ever lost or compromised, only its
@@ -287,7 +365,7 @@ if [ ! -f "$SSH_KEY" ]; then
     fi
 fi
 
-# --- 12. Snapper + grub-btrfs (btrfs snapshot rollback) ----------------------
+# --- 13. Snapper + grub-btrfs (btrfs snapshot rollback) ----------------------
 #
 # Assumes the archinstall-time subvolume layout: @ -> /, @home -> /home, both
 # with their own @snapshots-style subvolume pre-mounted at .snapshots by
@@ -326,7 +404,7 @@ if command -v grub-mkconfig >/dev/null 2>&1; then
     sudo grub-mkconfig -o /boot/grub/grub.cfg
 fi
 
-# --- 13. Default shell --------------------------------------------------------
+# --- 14. Default shell --------------------------------------------------------
 if [ "$SHELL" != "$(command -v fish)" ]; then
     log "Setting fish as your default shell (you'll be prompted for your password)"
     chsh -s "$(command -v fish)"
