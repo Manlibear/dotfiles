@@ -133,7 +133,7 @@ ForegroundPositive=0,110,40
 ForegroundVisited=224,64,251
 
 [General]
-ColorSchemeHash=35c73fb379a4940e5f22982a33078640b27cf788
+ColorSchemeHash=625c32ae46f33771aca7694ab0deae5a44bbf41c
 font=Noto Sans,10,-1,5,50,0,0,0,0,0
 smallestReadableFont=Noto Sans,8,-1,5,50,0,0,0,0,0
 

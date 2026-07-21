@@ -20,6 +20,19 @@ notification handling (see below) and masks mako, vendors the Noctalia SDDM
 theme and the KvNoctalia Kvantum theme and activates both, and offers to set
 fish as your login shell. Safe to re-run.
 
+## Niri HDR (optional)
+
+```sh
+~/Projects/dotfiles/install_niri_hdr.sh
+```
+
+Not part of `install.sh` — builds the [dividebysandwich](https://github.com/dividebysandwich/niri)
+HDR fork of niri (+ its paired Smithay fork) from source and installs it as a
+second, parallel "Niri HDR" SDDM session, so the pacman-packaged niri stays
+untouched. Slow (compiles a Rust compositor) and only useful on HDR-panel
+hardware, hence opt-in. Safe to re-run — pulls the latest commits on
+`hdr-smithay-master`/`ds-hdr-master` and rebuilds in place.
+
 ## Layout
 
 ```
@@ -47,6 +60,7 @@ system/                      # root-owned /etc files, installed via sudo, not st
                                 #   Noctalia SDDM theme (Current=noctalia)
 packages.txt                # paru -S --needed (official repo + AUR, one list)
 install.sh
+install_niri_hdr.sh         # optional: HDR niri fork as a second SDDM session
 ```
 
 Each top-level dir under `stow/` is a stow "package" — `stow -d stow -t ~

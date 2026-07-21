@@ -2,6 +2,8 @@ if status is-interactive
 # Commands to run in interactive sessions can go here
 end
 
+set -gx WLR_RENDERER vulkan
+
 oh-my-posh init fish --config "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/refs/heads/main/themes/amro.omp.json" | source
 
 
