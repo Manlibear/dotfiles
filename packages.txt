@@ -37,6 +37,7 @@ usbutils
 visage-bin
 zed
 sddm
+qt5-declarative
 hyprmod
 ntfs-3g
 dolphin

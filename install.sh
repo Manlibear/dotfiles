@@ -216,6 +216,14 @@ done < <(find system/quickshell/noctalia-shell -type f -print0)
 # Color sync (theme.template.conf -> theme.conf) and wallpaper sync
 # (sync-shell-wallpaper.sh) are wired up on the noctalia-shell side via
 # stow/noctalia's user-templates.toml and settings.json hooks.wallpaperChange.
+#
+# Needs `qt5-declarative` (in packages.txt) even though everything else here
+# is Qt6 - Arch's sddm package ships a Qt5-built sddm-greeter binary, and this
+# QML theme needs its libQt5Quick.so.5/libQt5Qml.so.5. Without it, sddm-helper
+# exits 127 on greeter start (dynamic linker abort) and SDDM looks broken in a
+# way that's easy to misdiagnose as a PAM/auth problem instead - the "Auth:"
+# log line is misleading, the actual failure is the greeter itself never
+# starting.
 if pacman -Qi sddm-astronaut-theme >/dev/null 2>&1; then
     log "Removing sddm-astronaut-theme (replaced by noctalia theme)"
     sudo pacman -R --noconfirm sddm-astronaut-theme
